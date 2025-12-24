@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ôn Tập Công Nghệ 8 - Full Bộ Đề</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --error-color: #e74c3c;
+        }
+        body { font-family: sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; padding: 20px; }
+        #quiz-container { background: white; width: 100%; max-width: 750px; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: var(--primary-color); }
+        #stats { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 20px; padding: 15px; background: #ecf0f1; border-radius: 8px; position: sticky; top: 0; z-index: 10; }
+        .question-block { margin-bottom: 25px; padding: 15px; border: 1px solid #eee; border-radius: 8px; }
+        .question-text { font-weight: bold; margin-bottom: 12px; display: block; color: #333; }
+        .options label { display: block; padding: 10px; background: #f9f9f9; margin-bottom: 5px; border-radius: 5px; cursor: pointer; }
+        .options label:hover { background: #eef2f3; }
+        #submit-btn { width: 100%; padding: 15px; background: var(--success-color); color: white; border: none; border-radius: 8px; font-size: 18px; cursor: pointer; }
+        #result { margin-top: 20px; display: none; padding: 20px; border-radius: 8px; text-align: center; font-size: 20px; }
+        .timer-low { color: var(--error-color); }
+    </style>
+</head>
+<body>
+
+<div id="quiz-container">
+    <h1>HỆ THỐNG ÔN TẬP CÔNG NGHỆ 8</h1>
+    <div id="stats">
+        <span>Thời gian: <span id="timer">03:00</span></span>
+        <span>Số câu: 10 ngẫu nhiên</span>
+    </div>
+
+    <form id="quiz-form">
+        <div id="questions-content"></div>
+        <button type="button" id="submit-btn" onclick="checkAnswers()">NỘP BÀI</button>
+    </form>
+    <div id="result"></div>
+</div>
+
+<script>
+    // Toàn bộ dữ liệu câu hỏi từ tài liệu 
+    const database = [
+        { q: "Khổ giấy A4 có kích thước là bao nhiêu?", a: ["297 x 420 mm", "210 x 297 mm", "148 x 210 mm", "420 x 594 mm"], c: 1 },
+        { q: "Trên bản vẽ kỹ thuật, tỉ lệ 1:2 nghĩa là gì?", a: ["Hình vẽ lớn gấp đôi thực tế", "Hình vẽ nhỏ hơn thực tế một nửa", "Hình vẽ bằng thực tế", "Không thay đổi"], c: 1 },
+        { q: "Đường nét chính dùng để biểu diễn các cạnh thấy là:", a: ["Nét liền đậm", "Nét liền mảnh", "Nét đứt", "Nét gạch chấm mảnh"], c: 0 },
+        { q: "Hình chiếu vuông góc của vật thể bao gồm:", a: ["Hình chiếu đứng, bằng, cạnh", "Hình chiếu trên, dưới, bên", "Hình chiếu mặt, góc, cạnh", "Hình chiếu trước, sau, bên"], c: 0 },
+        { q: "Kim loại nào thuộc nhóm kim loại đen?", a: ["Thép", "Đồng", "Nhôm", "Vàng"], c: 0 },
+        { q: "Đặc điểm của chất dẻo nhiệt rắn là:", a: ["Dẻo khi bị nung nóng", "Giòn và dễ gãy khi chịu lực", "Không thay đổi hình dạng khi bị nung nóng", "Dẫn điện tốt"], c: 2 },
+        { q: "Truyền động đai thường sử dụng khi:", a: ["Khoảng cách 2 trục gần", "Khoảng cách 2 trục xa", "Khoảng cách không quan trọng", "Khoảng cách thay đổi liên tục"], c: 1 },
+        { q: "Thước cặp dùng để đo:", a: ["Đường kính ngoài", "Đường kính trong", "Chiều sâu", "Tất cả các đáp án trên"], c: 3 },
+        { q: "Chất liệu cao su thường dùng sản xuất:", a: ["Lưỡi dao", "Tay cầm chảo", "Khung xe đạp", "Nồi, chảo"], c: 1 },
+        { q: "Quy trình đo và vạch dấu bao gồm bước:", a: ["Vẽ hình lên giấy", "Đánh dấu đường bao chi tiết", "Xác định vật liệu", "Đánh số chi tiết"], c: 1 },
+        { q: "Đường kính ngoài 60mm, tỉ lệ 1:2 thì trên bản vẽ là:", a: ["30 mm", "60 mm", "120 mm", "15 mm"], c: 0 },
+        { q: "Kim loại màu có đặc điểm:", a: ["Chịu lực tốt hơn kim loại đen", "Dễ bị oxy hóa hơn", "Nhẹ hơn kim loại đen", "Không làm được hợp kim"], c: 2 },
+        { q: "Vật thể dài 50mm, tỉ lệ 2:1. Chiều dài thực là:", a: ["25 mm", "50 mm", "100 mm", "75 mm"], c: 0 },
+        { q: "Tại sao cần bôi phấn hoặc vôi lên phôi trước khi vạch dấu?", a: ["Xác định vật liệu", "Giúp đường vạch rõ hơn", "Làm sạch bề mặt", "Làm nguội phôi"], c: 1 },
+        { q: "Khi đo lỗ tròn bằng thước cặp, cần lưu ý:", a: ["Kẹp thật chặt", "Xoay theo chiều kim đồng hồ", "Đặt thước thẳng hàng với tâm lỗ", "Kéo thước ra sau khi đo"], c: 2 },
+        { q: "Thước đo góc vạn năng khác ê ke vuông ở điểm:", a: ["Đo được nhiều góc khác nhau", "Chỉ đo được góc vuông", "Chất liệu khác", "Nhỏ gọn hơn"], c: 0 },
+        { q: "Quy trình vẽ hình chiếu vật thể đơn giản có mấy bước?", a: ["3 bước", "4 bước", "5 bước", "6 bước"], c: 2 },
+        { q: "Điểm khác biệt giữa truyền động xích và đai là:", a: ["Dùng xích và dùng đai", "Xích cần bôi trơn, đai thì không", "Xích dùng cho khoảng cách xa hơn", "Xích dễ trượt hơn"], c: 1 },
+        { q: "Khi gia công cơ khí bằng tay, chọn dụng cụ phù hợp để:", a: ["Tiết kiệm thời gian", "Đảm bảo chính xác và an toàn", "Làm đẹp sản phẩm", "Nâng cao độ bền vật liệu"], c: 1 },
+        { q: "Bước nào cần thực hiện ĐẦU TIÊN khi vạch dấu?", a: ["Đánh số chi tiết", "Bôi phấn hoặc vôi lên bề mặt", "Vẽ bằng bút chì", "Dùng ê ke kiểm tra"], c: 1 },
+        { q: "Vì sao hợp kim nhôm phổ biến hơn nhôm nguyên chất?", a: ["Nhẹ hơn", "Cứng và bền hơn", "Dẫn điện kém hơn", "Giá rẻ hơn"], c: 1 },
+        { q: "Thước cặp điện tử khác thước cặp chia vạch ở chỗ:", a: ["Cho kết quả nhanh hơn", "Chính xác kém hơn", "Không cần hiệu chỉnh", "Chỉ đo được 1 loại kích thước"], c: 0 },
+        { q: "Khi cưa kim loại, góc giữa lưỡi cưa và mặt vật liệu là:", a: ["30°", "45°", "60°", "75°"], c: 3 },
+        { q: "Dụng cụ đo góc trong gia công cơ khí là:", a: ["Thước cặp", "Thước lá", "Ê ke đo góc", "Thước đo chiều sâu"], c: 2 },
+        { q: "Đặc điểm chung của vật liệu phi kim loại là:", a: ["Cứng và bền", "Dẫn điện tốt", "Nhẹ và không bị gỉ", "Khó tái chế"], c: 2 },
+        { q: "Khi gia công tay, phương pháp cưa chủ yếu để:", a: ["Làm bóng mịn", "Loại bỏ vật liệu thô dư", "Kiểm tra kích thước", "Gắn các bộ phận"], c: 1 },
+        { q: "Để đường vạch dấu chính xác, cần:", a: ["Dùng ê ke hoặc dụng cụ đo phù hợp", "Vạch bằng tay", "Đánh dấu bằng bút chì", "Để phôi trơn láng"], c: 0 },
+        { q: "Trước khi cưa thanh thép, thợ cần kiểm tra:", a: ["Loại kim loại", "Độ căng của lưỡi cưa", "Góc cưa", "Chiều dài lưỡi cưa"], c: 1 },
+        { q: "Trong cơ cấu tay quay con trượt, con trượt chuyển động:", a: ["Quay", "Tịnh tiến", "Lắc", "Hỗn hợp"], c: 1 },
+        { q: "Để giảm tai nạn khi gia công tay, cần:", a: ["Dùng lực tối đa", "Đeo kính bảo hộ và găng tay", "Tăng tốc độ", "Không cần kiểm tra dụng cụ"], c: 1 },
+        { q: "Vạch dấu chi tiết hình tròn nên dùng:", a: ["Ê ke", "Mũi vạch", "Compa vạch dấu", "Thước lá"], c: 2 },
+        { q: "Để vạch dấu vòng đệm đường kính 20mm và 50mm, cần:", a: ["Vẽ hình tròn bán kính 10mm và 25mm", "Ước lượng bằng tay", "Dùng ê ke", "Vạch theo mẫu"], c: 0 },
+        { q: "Cách chia giấy A0 thành các khổ A4 đúng tiêu chuẩn:", a: ["Gấp giấy tùy ý", "Cắt theo cảm giác", "Cắt thành 16 phần bằng nhau", "Cắt thành 8 phần"], c: 2 },
+        { q: "Khi đo chi tiết nhỏ bằng thước cặp, cần:", a: ["Kẹp chặt chi tiết giữa 2 mỏ", "Đọc thang đo phụ trước", "Siết quá chặt vít hãm", "Đặt trên mặt không phẳng"], c: 0 }
+    ];
+
+    let quizData = [];
+    let timeLeft = 180;
+    let timerId;
+
+    function startQuiz() {
+        quizData = [...database].sort(() => 0.5 - Math.random()).slice(0, 10);
+        const container = document.getElementById('questions-content');
+        container.innerHTML = quizData.map((item, index) => `
+            <div class="question-block">
+                <span class="question-text">Câu ${index + 1}: ${item.q}</span>
+                <div class="options">
+                    ${item.a.map((opt, i) => `
+                        <label><input type="radio" name="q${index}" value="${i}"> ${opt}</label>
+                    `).join('')}
+                </div>
+            </div>
+        `).join('');
+        
+        timerId = setInterval(() => {
+            timeLeft--;
+            let m = Math.floor(timeLeft/60);
+            let s = timeLeft%60;
+            const tDisplay = document.getElementById('timer');
+            tDisplay.innerText = `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+            if(timeLeft <= 30) tDisplay.classList.add('timer-low');
+            if(timeLeft <= 0) checkAnswers();
+        }, 1000);
+    }
+
+    function checkAnswers() {
+        clearInterval(timerId);
+        let score = 0;
+        quizData.forEach((item, index) => {
+            const selected = document.querySelector(`input[name="q${index}"]:checked`);
+            if(selected && parseInt(selected.value) === item.c) score++;
+        });
+
+        const result = document.getElementById('result');
+        result.style.display = 'block';
+        result.innerHTML = `Bạn đúng <b>${score}/10</b> câu.<br>
+                           <button onclick="location.reload()" style="margin-top:10px; padding:10px">Thử lại lượt khác</button>`;
+        document.getElementById('submit-btn').style.display = 'none';
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    startQuiz();
+</script>
+</body>
+</html>
